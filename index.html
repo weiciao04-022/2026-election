@@ -110,6 +110,38 @@ details p { margin-top: 8px; font-size: 15px; color: var(--ink-2); }
 .legend .badge { width: 22px; height: 22px; font-size: 11px; grid-row: auto; outline-width: 1px; }
 footer { max-width: 760px; margin: 0 auto; padding: 16px 20px 48px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--ink-3); line-height: 1.7; }
 
+/* 起始地圖 */
+.mapwrap { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+.mapbox { position: relative; background: var(--card); border: 1.5px solid var(--ink); border-radius: 12px;
+  box-shadow: 4px 4px 0 rgba(29,33,38,.12); overflow: hidden; height: min(76vh, 640px); }
+.mapbox svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; }
+.mapbox svg.dragging { cursor: grabbing; }
+.county-shape { fill: var(--surface); stroke: var(--ink); stroke-width: .8; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .15s; }
+.county-shape.has { fill: #e6dfcd; }
+.county-shape:hover, .county-shape:focus { fill: #d8cfb8; outline: none; }
+.county-shape.on { fill: var(--ink); }
+.county-label { font-size: 11px; font-weight: 700; fill: var(--ink-2); pointer-events: none; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.county-label.on { fill: var(--card); stroke: var(--ink); }
+.inset-box { fill: none; stroke: var(--ghost); stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+.inset-label { font-size: 9px; fill: var(--ink-3); }
+.mapctl { position: absolute; right: 10px; top: 10px; display: grid; gap: 6px; }
+.mapctl button { font: inherit; font-weight: 700; width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--ink);
+  background: var(--card); cursor: pointer; box-shadow: 2px 2px 0 rgba(29,33,38,.12); }
+.maphint { position: absolute; left: 10px; bottom: 8px; font-size: 12px; color: var(--ink-3); background: rgba(255,253,248,.85); padding: 2px 8px; border-radius: 6px; }
+.info { background: var(--card); border: 1.5px solid var(--ink); border-radius: 12px; padding: 16px 18px; box-shadow: 4px 4px 0 rgba(29,33,38,.12);
+  display: flex; flex-direction: column; gap: 10px; }
+.info h3 { margin: 0; font-size: 24px; font-weight: 900; }
+.info .mini { display: grid; gap: 6px; }
+.info .row { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.info .row .badge { width: 24px; height: 24px; font-size: 12px; grid-row: auto; outline-width: 1px; }
+.info .row small { color: var(--ink-3); font-size: 12.5px; }
+.info .go { margin-top: auto; font: inherit; font-weight: 700; padding: 10px 14px; border-radius: 8px; border: 1.5px solid var(--ink);
+  background: var(--ink); color: var(--card); cursor: pointer; }
+.info .placeholder { color: var(--ink-3); font-size: 15px; }
+@media (max-width: 700px) {
+  .mapwrap { grid-template-columns: 1fr; }
+  .mapbox { height: 62vh; }
+}
 @media (max-width: 520px) {
   body { font-size: 16px; }
   .cands { grid-template-columns: 1fr 1fr; }
@@ -133,6 +165,17 @@ footer { max-width: 760px; margin: 0 auto; padding: 16px 20px 48px; border-top: 
     <p class="dek">把所有登記參選人的政見放在一起比較。有寫金額的，再對照該縣市 2027 年能自由運用的統籌分配稅款，看看這張支票有多大。</p>
     <div class="countdown" id="countdown"></div>
   </header>
+
+  <section aria-label="臺灣縣市地圖">
+    <div class="mapwrap">
+      <div class="mapbox">
+        <svg id="twmap" role="group" aria-label="臺灣 22 縣市地圖，可拖曳、縮放，點選縣市查看候選人"></svg>
+        <div class="mapctl"><button type="button" id="zin" aria-label="放大">＋</button><button type="button" id="zout" aria-label="縮小">－</button><button type="button" id="zreset" aria-label="重設地圖">⟲</button></div>
+        <div class="maphint">拖曳移動・滾輪或雙指縮放・點選縣市</div>
+      </div>
+      <div class="info" id="info" aria-live="polite"><p class="placeholder">點地圖上的縣市，看看有哪些人參選。<br>顏色較深的縣市，本站已經整理了部分政見。</p></div>
+    </div>
+  </section>
 
   <p class="notice">⚠ 測試版：政見資料還在蒐集與查核中。標示「未核對原始出處」的條目，還沒對照候選人本人的說明，請勿直接引用。</p>
 
@@ -169,6 +212,7 @@ footer { max-width: 760px; margin: 0 auto; padding: 16px 20px 48px; border-top: 
 </footer>
 
 <script src="data/processed/data.js"></script>
+<script src="data/processed/map.js"></script>
 <script>
 (function () {
   var D = window.ELECTION_DATA;
@@ -240,6 +284,9 @@ footer { max-width: 760px; margin: 0 auto; padding: 16px 20px 48px; border-top: 
   function costBlock(p, county) {
     if (p.annual_cost_ntd === null) return '<div class="cost none">未提供金額</div>';
     var src = '金額來源：' + esc(COST_SRC[p.cost_source] || '') + '｜' + esc(p.cost_note);
+    if (p.cost_basis === 'unclear') {
+      return '<div class="cost"><div class="big">' + money(p.annual_cost_ntd) + '</div><div class="share">出處沒有說明這是每年還是四年總額，暫不計算比例。</div><div class="note">' + src + '</div></div>';
+    }
     if (p.cost_basis === 'one_time') {
       return '<div class="cost"><div class="big">' + money(p.annual_cost_ntd) + '<small>（一次性，不和每年財源比較）</small></div><div class="note">' + src + '</div></div>';
     }
@@ -275,10 +322,10 @@ footer { max-width: 760px; margin: 0 auto; padding: 16px 20px 48px; border-top: 
           '<div class="name">' + (x.ballot_no ? '<span class="no">' + x.ballot_no + '號</span>' : '') + esc(x.candidate) + (x.incumbent === 'Y' ? '<span class="tag-inc">現任</span>' : '') + '</div>' +
           '<div class="party">' + esc(x.party) + '</div>' +
           (x.bio ? '<div class="bio">' + esc(x.bio) + '</div>' : '') +
-          '<div class="count">' + (n ? '收錄 ' + n + ' 條政見' : '尚未收錄政見') + '</div></div>';
+          '<div class="count">' + (n ? '本站已整理 ' + n + ' 條' : '本站整理中') + '</div></div>';
       }).join('') + '</div>';
 
-      if (cp.length === 0) html += '<p class="empty">目前沒有符合篩選條件的政見。</p>';
+      if (cp.length === 0) html += '<p class="empty">本站還沒整理到符合條件的政見。</p>';
       cp.forEach(function (p) {
         var cand = cands.find(function (x) { return x.candidate === p.candidate; }) || { party: '' };
         html += '<article class="policy" style="' + pstyle(cand.party) + '">' +
@@ -288,7 +335,7 @@ footer { max-width: 760px; margin: 0 auto; padding: 16px 20px 48px; border-top: 
           (p.target ? '<span class="chip">對象：' + esc(p.target) + '</span>' : '') +
           (p.verified === 'Y' ? '' : '<span class="chip warn">未核對原始出處</span>') + '</div>' +
           costBlock(p, c) +
-          '<div class="src">出處：<a href="' + esc(p.source_url) + '" target="_blank" rel="noopener">' + esc(new URL(p.source_url).hostname.replace(/^www\./, '')) + '</a>（' + esc(p.source_date) + '）</div>' +
+          '<div class="src">出處：<a href="' + esc(p.source_url) + '" target="_blank" rel="noopener">' + esc(new URL(p.source_url).hostname.replace(/^www\./, '')) + '</a>' + (p.source_date ? '（' + esc(p.source_date) + '）' : '（日期待補）') + '</div>' +
           '</article>';
       });
       html += '</section>';
@@ -296,6 +343,108 @@ footer { max-width: 760px; margin: 0 auto; padding: 16px 20px 48px; border-top: 
     document.getElementById('results').innerHTML = html || '<p class="empty">沒有符合條件的政見。</p>';
   }
   render();
+
+  // ===== 起始地圖：拖曳、縮放、點選 =====
+  var M = window.TW_MAP, svg = document.getElementById('twmap'), NS = 'http://www.w3.org/2000/svg';
+  var home = { x: 0, y: 0, w: M.w, h: M.h }, vb = Object.assign({}, home);
+  function setVB() { svg.setAttribute('viewBox', [vb.x, vb.y, vb.w, vb.h].join(' ')); }
+  setVB();
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  var g = document.createElementNS(NS, 'g'); svg.appendChild(g);
+  var hasPolicy = {}; D.policies.forEach(function (p) { hasPolicy[p.county_id] = true; });
+  var shapes = {}, labels = {};
+  M.counties.forEach(function (c) {
+    if (c.inset) {
+      var r = document.createElementNS(NS, 'rect'), b = c.inset;
+      r.setAttribute('class', 'inset-box'); r.setAttribute('x', b[0][0] - 6); r.setAttribute('y', b[0][1] - 18);
+      r.setAttribute('width', b[1][0] - b[0][0] + 12); r.setAttribute('height', b[1][1] - b[0][1] + 24); r.setAttribute('rx', 6);
+      g.appendChild(r);
+      var t0 = document.createElementNS(NS, 'text'); t0.setAttribute('class', 'inset-label');
+      t0.setAttribute('x', b[0][0]); t0.setAttribute('y', b[0][1] - 6); t0.textContent = c.id === 'LNN' ? '連江縣（馬祖）' : '金門縣';
+      g.appendChild(t0);
+    }
+    var p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', c.d); p.setAttribute('class', 'county-shape' + (hasPolicy[c.id] ? ' has' : ''));
+    p.setAttribute('tabindex', '0'); p.setAttribute('role', 'button'); p.setAttribute('aria-label', c.name);
+    p.dataset.id = c.id; g.appendChild(p); shapes[c.id] = p;
+    p.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(c.id); } });
+  });
+  M.counties.forEach(function (c) {
+    if (c.inset) return;
+    var t = document.createElementNS(NS, 'text');
+    t.setAttribute('class', 'county-label'); t.setAttribute('x', c.cx); t.setAttribute('y', c.cy);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
+    var SHORT = { HSZ: '竹市', HSQ: '竹縣', CYI: '嘉市', CYQ: '嘉縣' };
+    t.textContent = SHORT[c.id] || c.name.replace(/[縣市]$/, ''); g.appendChild(t); labels[c.id] = t;
+  });
+  // 小縣市標籤位置微調，避免重疊
+  [['TPE', -8, -6], ['NWT', 14, 14], ['KEE', 12, -10], ['HSZ', -16, -4], ['CYI', -18, -8], ['CYQ', 16, 6]].forEach(function (a) {
+    var t = labels[a[0]]; if (t) { t.setAttribute('x', +t.getAttribute('x') + a[1]); t.setAttribute('y', +t.getAttribute('y') + a[2]); }
+  });
+
+  function toSVG(cx, cy) {
+    var r = svg.getBoundingClientRect(), s = Math.max(vb.w / r.width, vb.h / r.height);
+    var ox = (r.width * s - vb.w) / 2, oy = (r.height * s - vb.h) / 2;
+    return { x: vb.x - ox + (cx - r.left) * s, y: vb.y - oy + (cy - r.top) * s, s: s };
+  }
+  function zoom(f, cx, cy) {
+    var r = svg.getBoundingClientRect();
+    var pt = cx == null ? { x: vb.x + vb.w / 2, y: vb.y + vb.h / 2 } : toSVG(cx, cy);
+    var nw = Math.min(Math.max(vb.w / f, M.w / 8), M.w * 1.5), k = nw / vb.w;
+    vb.x = pt.x - (pt.x - vb.x) * k; vb.y = pt.y - (pt.y - vb.y) * k; vb.w = nw; vb.h = vb.h * k; setVB();
+  }
+  document.getElementById('zin').onclick = function () { zoom(1.5); };
+  document.getElementById('zout').onclick = function () { zoom(1 / 1.5); };
+  document.getElementById('zreset').onclick = function () { vb = Object.assign({}, home); setVB(); };
+  svg.addEventListener('wheel', function (e) { e.preventDefault(); zoom(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
+
+  var pts = {}, moved = 0, last = null, pinch = null;
+  svg.addEventListener('pointerdown', function (e) {
+    svg.setPointerCapture(e.pointerId); pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+    moved = 0; last = { x: e.clientX, y: e.clientY }; svg.classList.add('dragging');
+    var ids = Object.keys(pts);
+    if (ids.length === 2) { var a = pts[ids[0]], b = pts[ids[1]]; pinch = Math.hypot(a.x - b.x, a.y - b.y); }
+  });
+  svg.addEventListener('pointermove', function (e) {
+    if (!pts[e.pointerId]) return;
+    pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+    var ids = Object.keys(pts);
+    if (ids.length === 2 && pinch) {
+      var a = pts[ids[0]], b = pts[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y);
+      zoom(d / pinch, (a.x + b.x) / 2, (a.y + b.y) / 2); pinch = d; moved = 99; return;
+    }
+    var s = toSVG(0, 0).s, dx = e.clientX - last.x, dy = e.clientY - last.y;
+    moved += Math.abs(dx) + Math.abs(dy);
+    vb.x -= dx * s; vb.y -= dy * s; last = { x: e.clientX, y: e.clientY }; setVB();
+  });
+  function up(e) {
+    var wasTap = moved < 6 && Object.keys(pts).length === 1;
+    delete pts[e.pointerId]; pinch = null; svg.classList.remove('dragging');
+    if (wasTap && e.type === 'pointerup') {
+      var el = document.elementFromPoint(e.clientX, e.clientY);
+      if (el && el.dataset && el.dataset.id) pick(el.dataset.id);
+    }
+    var rest = Object.keys(pts); if (rest.length) last = pts[rest[0]];
+  }
+  svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
+
+  function pick(id) {
+    Object.keys(shapes).forEach(function (k) { shapes[k].classList.toggle('on', k === id); if (labels[k]) labels[k].classList.toggle('on', k === id); });
+    var c = D.counties.find(function (x) { return x.id === id; });
+    var cands = D.candidates.filter(function (x) { return x.county_id === id; })
+      .sort(function (a, b) { return ((a.ballot_no || 99) - (b.ballot_no || 99)) || (a.order - b.order); });
+    var n = D.policies.filter(function (p) { return p.county_id === id; }).length;
+    document.getElementById('info').innerHTML = '<p class="kicker">' + esc(c.type) + '長選舉｜' + cands.length + ' 人參選</p><h3>' + esc(c.name) + '</h3>' +
+      '<div class="mini">' + cands.map(function (x) {
+        return '<div class="row" style="' + pstyle(x.party) + '">' + badge(x.party) + '<b>' + esc(x.candidate) + '</b><small>' + esc(x.party) + (x.incumbent === 'Y' ? '・現任' : '') + '</small></div>';
+      }).join('') + '</div>' +
+      '<p class="placeholder">本站已整理 ' + n + ' 條政見</p>' +
+      '<button type="button" class="go" id="go">看' + esc(c.name) + '的政見 ↓</button>';
+    document.getElementById('go').onclick = function () {
+      state.county = id; sel.value = id; render();
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+  }
 
   var progress = document.getElementById('progress');
   window.addEventListener('scroll', function () {

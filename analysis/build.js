@@ -70,6 +70,7 @@ const outPolicies = policies.map(p => {
   const cost = toNum(p.annual_cost_ntd);
   if (cost !== null && p.cost_source === 'none') problems.push(`${p.policy_id}：有金額但 cost_source 是 none`);
   if (p.cost_source === 'ours' && !p.cost_note) problems.push(`${p.policy_id}：本站推估必須寫 cost_note`);
+  if (!['annual','one_time','total_term','unclear'].includes(p.cost_basis)) problems.push(`${p.policy_id}：cost_basis「${p.cost_basis}」不是規定的值`);
 
   // 只有「每年」金額才算比例；一次性建設不和每年財源比
   let annualCost = null;

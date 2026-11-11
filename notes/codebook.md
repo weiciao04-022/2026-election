@@ -21,7 +21,7 @@
 | `type` | 政見類型 | `cash`直接發錢／`subsidy`費用減免或補助／`infrastructure`建設／`service`新增或擴大服務／`regulation`制度法規／`other` |
 | `target` | 受益對象 | 自由文字，例如「65 歲以上設籍長者」 |
 | `annual_cost_ntd` | 每年成本（新台幣元） | 數字；沒有就留空 |
-| `cost_basis` | 成本口徑 | `annual`每年經常支出／`one_time`一次性（之後換算）／`total_term`四年總額 |
+| `cost_basis` | 成本口徑 | `annual`每年經常支出／`one_time`一次性（之後換算）／`total_term`四年總額／`unclear`出處沒說明（顯示金額但不算比例） |
 | `cost_source` | 金額來源 | `candidate`候選人自估／`government`政府機關估算／`ours`本站推估（必須在 `cost_note` 寫算式）／`none`未提供 |
 | `cost_note` | 金額說明 | 算式、假設、引用原話 |
 | `source_url` | 出處網址 | 必填 |
@@ -50,4 +50,5 @@
 
 ## 修訂紀錄
 - 2026-11-11 v0.1 初稿
+- 2026-11-11 v0.3 新增 `cost_basis = unclear`：出處只給總數、沒說是每年或總額時使用，避免誤算比例。
 - 2026-11-11 v0.2 改用慣用黨色（原為全部中性色），理由：讀者辨識較快；以簡稱字補足色覺辨識。
