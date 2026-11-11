@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026 縣市長政見對照｜測試版</title>
+<style>
+  :root {
+    --bg: #faf9f6; --card: #ffffff; --ink: #1f2328; --muted: #5f6670;
+    --line: #e3e1db; --accent: #2b5d8a; --warn-bg: #fff6e0; --warn: #8a5a00;
+    --chip: #eef1f4;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+         background: var(--bg); color: var(--ink); line-height: 1.6; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 16px; }
+  .notice { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 10px 14px; font-size: .92rem; margin-bottom: 20px; }
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  label { font-size: .85rem; color: var(--muted); display: block; }
+  select { width: 100%; padding: 8px; font-size: 1rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  .check { display: flex; align-items: center; gap: 6px; padding-top: 22px; font-size: .95rem; color: var(--ink); }
+  section { margin-bottom: 28px; }
+  h2 { font-size: 1.15rem; border-bottom: 2px solid var(--ink); padding-bottom: 4px; }
+  .county-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .fiscal { font-size: .88rem; color: var(--muted); }
+  .cands { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 10px 0 16px; }
+  .cand { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+  .cand b { font-size: 1rem; }
+  .cand .meta { font-size: .82rem; color: var(--muted); }
+  .count { font-size: .82rem; }
+  .count.zero { color: var(--muted); }
+  .policy { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+  .policy .who { font-size: .85rem; color: var(--muted); }
+  .policy h3 { font-size: 1.05rem; margin: 2px 0 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+  .chip { background: var(--chip); border-radius: 999px; padding: 1px 10px; font-size: .8rem; }
+  .chip.unverified { background: var(--warn-bg); color: var(--warn); }
+  .cost { border-left: 4px solid var(--accent); padding: 4px 10px; margin: 8px 0; font-size: .95rem; }
+  .cost.none { border-left-color: var(--line); color: var(--muted); }
+  .cost .big { font-size: 1.15rem; font-weight: 700; }
+  .cost .note { font-size: .82rem; color: var(--muted); }
+  .bar { height: 8px; background: var(--chip); border-radius: 4px; margin-top: 4px; overflow: hidden; }
+  .bar span { display: block; height: 100%; background: var(--accent); }
+  .src { font-size: .82rem; color: var(--muted); }
+  a { color: var(--accent); }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }
+  summary { cursor: pointer; font-weight: 600; }
+  .empty { color: var(--muted); font-style: italic; }
+  footer { font-size: .82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>2026 縣市長政見對照</h1>
+  <p class="sub">22 縣市、所有登記參選人的政見，以及「錢從哪裡來」的對照。投票日：2026 年 11 月 28 日（六）</p>
+  <div class="notice">⚠ 測試版：政見資料還在蒐集與查核中，標示「未核對」的條目尚未比對候選人的原始出處，請勿直接引用。</div>
+
+  <div class="controls">
+    <div><label for="f-county">縣市</label><select id="f-county"></select></div>
+    <div><label for="f-issue">議題</label><select id="f-issue"></select></div>
+    <div><label for="f-type">政見類型</label><select id="f-type"></select></div>
+    <div class="check"><input type="checkbox" id="f-cost"><label for="f-cost" style="color:inherit;font-size:inherit">只看有金額的政見</label></div>
+  </div>
+
+  <div id="results"></div>
+
+  <section>
+    <h2>怎麼讀這個網站</h2>
+    <details><summary>金額比例的分母是什麼？</summary>
+      <p>我們用「2027 年度（116 年度）中央普通統籌分配稅款」當分母，這是地方政府可以自己決定用途的主要財源。不過地方財源還有地方稅、規費和中央補助款，所以比例只代表「這項政見大約要用掉多少統籌款」，<b>不代表縣市付得起或付不起</b>。</p>
+      <p>只有每年都要花的錢（例如補助）才會算比例；一次性的建設（例如捷運）經費多由中央和地方分攤，不和每年財源直接比較。</p>
+    </details>
+    <details><summary>金額是誰算的？</summary>
+      <p>每一筆金額都標示來源：<b>候選人自估</b>、<b>政府機關估算</b>或<b>本站推估</b>。本站推估會寫出完整算式。沒有金額的政見標示「未提供金額」，不代表成本為零，也不代表比較好或比較差。</p>
+    </details>
+    <details><summary>為什麼候選人沒有用政黨顏色？</summary>
+      <p>為了避免版面配色影響閱讀，所有政黨一律使用相同的中性色。同一縣市的候選人依選委會公告號次排列（號次補齊前，依中央社登記名單順序）。本站不放民調，也不預測選舉結果。</p>
+    </details>
+    <details><summary>完整分類規則</summary>
+      <p>每條政見的議題、類型、金額口徑如何判斷，請見 <a href="notes/codebook.md">分類規則（codebook）</a>，資料來源與待查事項見 <a href="notes/sources.md">來源清單</a>。</p>
+    </details>
+  </section>
+
+  <footer>
+    <p>資料來源：中央社 22 縣市長登記參選名單（2026-09-04）、中央社 2027 年統籌分配稅款報導（2026-08-25）、各政見條目所列出處。<br>
+    <span id="built"></span>｜原始資料與程式：<a href="https://github.com/weiciao04-022/2026-election">GitHub</a></p>
+  </footer>
+</main>
+
+<script src="data/processed/data.js"></script>
+<script>
+  const D = window.ELECTION_DATA;
+
+  const ISSUE = { child: '育兒兒少', elder: '長者長照', health: '醫療健康', transport: '交通', housing: '居住',
+    education: '教育', economy: '產業就業', environment: '環境能源', safety: '治安防災', governance: '市政治理',
+    culture: '文化觀光', other: '其他' };
+  const TYPE = { cash: '直接發錢', subsidy: '費用減免／補助', infrastructure: '建設', service: '新增服務',
+    regulation: '制度法規', other: '其他' };
+  const COST_SRC = { candidate: '候選人自估', government: '政府機關估算', ours: '本站推估' };
+
+  // 金額顯示：1 億以上用「億」，以下用「萬」
+  function money(n) {
+    if (n >= 1e8) return (n / 1e8).toLocaleString('zh-TW', { maximumFractionDigits: 2 }) + ' 億元';
+    return (n / 1e4).toLocaleString('zh-TW', { maximumFractionDigits: 0 }) + ' 萬元';
+  }
+  function pct(x) {
+    return x < 0.001 ? '不到 0.1%' : (x * 100).toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + '%';
+  }
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // 篩選選單
+  function fillSelect(id, entries, allLabel) {
+    const el = document.getElementById(id);
+    el.innerHTML = `<option value="">${allLabel}</option>` + entries.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+    el.addEventListener('change', render);
+  }
+  fillSelect('f-county', D.counties.map(c => [c.id, c.name]), '全部縣市');
+  fillSelect('f-issue', Object.entries(ISSUE), '全部議題');
+  fillSelect('f-type', Object.entries(TYPE), '全部類型');
+  document.getElementById('f-cost').addEventListener('change', render);
+  document.getElementById('built').textContent = '資料更新：' + new Date(D.built_at).toLocaleString('zh-TW');
+
+  function costBlock(p, county) {
+    if (p.annual_cost_ntd === null) {
+      // cost_note 在沒有金額時是內部查核筆記，不對讀者顯示
+      return `<div class="cost none">未提供金額</div>`;
+    }
+    if (p.cost_basis === 'one_time') {
+      return `<div class="cost"><span class="big">${money(p.annual_cost_ntd)}</span>（一次性，不和每年財源比較）
+        <div class="note">${esc(COST_SRC[p.cost_source] || '')}｜${esc(p.cost_note)}</div></div>`;
+    }
+    const share = p.share_of_tongchou;
+    const shareText = share === null
+      ? `<div class="note">${esc(county.name)}的 2027 年統籌分配稅款資料待補，暫不計算比例。</div>`
+      : `<div>約占${esc(county.name)} 2027 年統籌分配稅款的 <b>${pct(share)}</b></div>
+         <div class="bar" aria-hidden="true"><span style="width:${Math.min(share * 100, 100)}%"></span></div>`;
+    return `<div class="cost"><span class="big">每年約 ${money(p.annual_cost_calc)}</span>
+      ${shareText}
+      <div class="note">金額來源：${esc(COST_SRC[p.cost_source] || '')}｜${esc(p.cost_note)}</div></div>`;
+  }
+
+  function render() {
+    const fc = document.getElementById('f-county').value;
+    const fi = document.getElementById('f-issue').value;
+    const ft = document.getElementById('f-type').value;
+    const fm = document.getElementById('f-cost').checked;
+
+    const pol = D.policies.filter(p =>
+      (!fi || p.issue === fi) && (!ft || p.type === ft) && (!fm || p.annual_cost_ntd !== null));
+
+    const counties = D.counties.filter(c => !fc || c.id === fc);
+    let html = '';
+
+    for (const c of counties) {
+      const cands = D.candidates.filter(x => x.county_id === c.id)
+        .sort((a, b) => (a.ballot_no ?? 99) - (b.ballot_no ?? 99) || a.order - b.order);
+      const cp = pol.filter(p => p.county_id === c.id);
+      // 沒選縣市時，只顯示有符合政見的縣市，避免頁面太長
+      if (!fc && cp.length === 0) continue;
+
+      const f = c.fiscal;
+      const fiscalText = f?.tongchou_ntd
+        ? `2027 統籌分配稅款 ${money(f.tongchou_ntd)}（人均 ${f.per_capita_ntd.toLocaleString('zh-TW')} 元）`
+        : '2027 統籌分配稅款：資料待補';
+
+      html += `<section><div class="county-head"><h2>${esc(c.name)}</h2><span class="fiscal">${fiscalText}</span></div>
+        <div class="cands">${cands.map(x => {
+          const n = cp.filter(p => p.candidate === x.candidate).length;
+          return `<div class="cand"><b>${x.ballot_no ? x.ballot_no + '號 ' : ''}${esc(x.candidate)}</b>
+            <div class="meta">${esc(x.party)}${x.incumbent === 'Y' ? '・現任' : ''}${x.bio ? '｜' + esc(x.bio) : ''}</div>
+            <div class="count ${n ? '' : 'zero'}">${n ? `已收錄 ${n} 條政見` : '尚未收錄政見'}</div></div>`;
+        }).join('')}</div>`;
+
+      if (cp.length === 0) html += `<p class="empty">目前沒有符合篩選條件的政見。</p>`;
+
+      for (const p of cp) {
+        const cand = cands.find(x => x.candidate === p.candidate);
+        html += `<article class="policy">
+          <div class="who">${esc(p.candidate)}｜${esc(cand?.party || '')}</div>
+          <h3>${esc(p.title)}</h3>
+          <div>${esc(p.summary)}</div>
+          <div class="chips"><span class="chip">${ISSUE[p.issue] || p.issue}</span><span class="chip">${TYPE[p.type] || p.type}</span>
+            ${p.target ? `<span class="chip">對象：${esc(p.target)}</span>` : ''}
+            ${p.verified === 'Y' ? '' : '<span class="chip unverified">未核對原始出處</span>'}</div>
+          ${costBlock(p, c)}
+          <div class="src">出處：<a href="${esc(p.source_url)}" target="_blank" rel="noopener">${esc(new URL(p.source_url).hostname)}</a>（${esc(p.source_date)}）</div>
+        </article>`;
+      }
+      html += `</section>`;
+    }
+    document.getElementById('results').innerHTML = html || '<p class="empty">沒有符合條件的政見。</p>';
+  }
+
+  render();
+</script>
+</body>
+</html>
